@@ -1,0 +1,397 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[1]:
+
+
+import pandas as pd
+from sklearn .preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import Flatten
+from keras.layers import LSTM
+
+
+# In[2]:
+
+
+from math import sqrt
+from numpy import split
+from numpy import array
+from sklearn.metrics import mean_squared_error
+from matplotlib import pyplot
+from keras.layers import RepeatVector
+from keras.layers import TimeDistributed
+
+
+# In[3]:
+
+
+from matplotlib import pyplot as plt
+import numpy as np
+np.set_printoptions(suppress=True)
+import pandas as pd
+pd.options.display.float_format = '{:,.10f}'.format
+
+
+# In[4]:
+
+
+data  = pd.read_excel('emotion.xls').drop('Date', axis=1 ).set_index("day")
+
+
+# In[5]:
+
+
+data = data.astype('float32')
+
+
+# In[6]:
+
+
+data_vol =  data.iloc[ : , 0:13].drop(['Close_nifty', 'Close_sensex','% change_nifty', '% change_sensex'], axis= 1)
+
+
+# In[7]:
+
+
+data_vol.info()
+
+
+# In[8]:
+
+
+data_vol.head()
+
+
+# ## Train the Model
+
+# In[121]:
+
+
+# def split_dataset(data):
+# 	# split into  months
+#     train, test = data[0:3138], data[3138:3168]
+# 	# restructure into windows of monthly data
+#     train = array(split(train, len(train)/30))
+#     test = array(split(test, len(test)/30))
+#     return train, test
+
+
+# In[17]:
+
+
+yscaler = MinMaxScaler()
+df = pd.DataFrame(data_vol.iloc[18:3138, 8])
+df = pd.DataFrame(yscaler.fit_transform(df), columns=df.columns, index=df.index)
+
+
+# In[19]:
+
+
+df.describe()
+
+
+# In[20]:
+
+
+scaler = MinMaxScaler()
+train, test = data_vol[18:3138], data_vol[3138:3168]
+train = pd.DataFrame(scaler.fit_transform(train), columns=train.columns, index=train.index)
+
+
+# In[21]:
+
+
+train.describe()
+
+
+# In[22]:
+
+
+train = array(split(train.values, len(train)/30))
+
+
+# In[23]:
+
+
+test = array(split(test.values, len(test)/30))
+
+
+# In[13]:
+
+
+# scaler = MinMaxScaler()
+# for col in data_vol.columns :
+# # for i in range (0,train.shape[2]) :
+#     data_vol[[col]] = scaler.fit_transform(data_vol[[col]])
+# #     train[:,:, i] = scaler.fit_transform(train[:,:,i])
+
+
+# In[14]:
+
+
+def to_supervised(train, n_input, n_out=30):
+	# flatten data
+	data = train.reshape((train.shape[0]*train.shape[1], train.shape[2]))
+	X, y = list(), list()
+	in_start = 0
+	for _ in range(len(data)):
+		in_end = in_start + n_input
+		out_end = in_end + n_out
+		if out_end <= len(data):
+			X.append(data[in_start:in_end, :])
+			y.append(data[in_end:out_end, 8])
+		in_start += 1
+	return array(X), array(y)
+
+
+# In[16]:
+
+
+def build_model(train, n_input):
+	train_x, train_y = to_supervised(train, n_input)
+	verbose, epochs, batch_size = 1, 55, 20
+	n_timesteps, n_features, n_outputs = train_x.shape[1], train_x.shape[2], train_y.shape[1]
+	# reshape output into [samples, timesteps, features]
+	train_y = train_y.reshape((train_y.shape[0], train_y.shape[1], 1))
+    
+	# define model
+	model = Sequential()
+	model.add(LSTM(200, activation='relu', input_shape=(n_timesteps, n_features)))
+	model.add(RepeatVector(n_outputs))
+	model.add(LSTM(200, activation='relu', return_sequences=True))
+	model.add(TimeDistributed(Dense(100, activation='relu')))
+	model.add(TimeDistributed(Dense(1)))
+	model.compile(loss='mse', optimizer='adam')
+	model.summary()
+    
+	# fit network
+	model.fit(train_x, train_y, epochs=epochs, batch_size=batch_size, verbose=verbose)
+	return model
+
+
+# In[17]:
+
+
+n_input = 30 
+model = build_model(train, n_input) 
+model.save( 'model6' + '.h5')
+print("model saved")
+
+
+# ### Prediction and Evaluation
+
+# In[24]:
+
+
+from numpy import loadtxt
+from keras.models import load_model  
+from keras.utils.vis_utils import plot_model
+
+
+# In[25]:
+
+
+def forecast(model, history, n_input):
+	# flatten data
+	data = array(history)
+	data = data.reshape((data.shape[0]*data.shape[1], data.shape[2]))
+	# retrieve last observations for input data
+	input_x = data[-n_input:, :]
+	# reshape into [1, n_input, n]
+	input_x = input_x.reshape((1, input_x.shape[0], input_x.shape[1]))
+	# forecast the next week
+	yhat = model.predict(input_x, verbose=1)
+	# we only want the vector forecast
+	yhat = yhat[0]
+	return yhat
+
+
+# In[49]:
+
+
+def evaluate_forecasts_new(actual, predicted):
+	scores = list()
+	# calculate an RMSE score for each day
+	for i in range(actual.shape[1]):
+		mse = mean_squared_error(actual[:, i], predicted[:, i])
+		rmse = sqrt(mse)
+		# store
+		scores.append(rmse)
+        
+	# calculate overall RMSE
+	s = 0
+	for row in range(actual.shape[0]):
+		for col in range(actual.shape[1]):
+			s += (actual[row, col] - predicted[row, col])**2
+	score = sqrt(s / (actual.shape[0] * actual.shape[1]))
+	return score, scores
+
+
+# In[31]:
+
+
+def evaluate_model_new(train, test, n_input):
+    
+	# history is a list of weekly data
+	history = [x for x in train]
+    
+	# walk-forward validation 
+	predictions = list()
+    
+	for i in range(len(test)):
+		yhat_sequence = forecast(model, history, n_input)
+# 		print(type(yhat_sequence))
+# 		print(yhat_sequence.shape) 
+# 		y1 = scaler.inverse_transform(yhat_sequence)
+# 		print(type(y1))
+# 		print(y1.shape)    
+		predictions.append(yhat_sequence)
+		history.append(test[i, :])
+        
+	# evaluate predictions days for each week
+	predictions = array(predictions)
+# 	print(predictions.shape)  
+# 	predictions = scaler.inverse_transform(predictions[0,:,:])
+	return predictions
+
+
+# In[32]:
+
+
+preds = evaluate_model_new(train, test, 30)
+
+
+# In[37]:
+
+
+preds.shape
+predictions = yscaler.inverse_transform(preds[0,:, :])
+
+
+# In[58]:
+
+
+predictions = predictions.reshape(1,-1,1)
+print(predictions.shape)
+
+
+# In[59]:
+
+
+score, scores = evaluate_forecasts_new(test[:, :, 8], predictions)
+
+
+# In[40]:
+
+
+def summarize_scores(name, score, scores):
+	s_scores = ', '.join(['%.1f' % s for s in scores])
+	print('%s: [%.3f] %s' % (name, score, s_scores))
+
+
+# In[60]:
+
+
+summarize_scores('test', score, scores)
+
+
+# In[63]:
+
+
+days = [i for i in range (1,31, 1)]
+pyplot.plot(days, scores, marker='o', label='lstm rmse')
+pyplot.show()
+
+
+# In[71]:
+
+
+days = [i for i in range (1,31, 1)]
+pyplot.plot( days, predictions[0,:, 0], color = 'blue',linestyle='-' ,  marker='o', label='predicted values')
+pyplot.plot( days, test[0, :, 8], color = 'green', linestyle='-',  marker='o', label= 'actual values')
+pyplot.show()
+
+
+# In[66]:
+
+
+train.shape
+
+
+# In[70]:
+
+
+data_vol.plot(y='Conditional Volatility', use_index=True)
+data.plot(y='Close_nifty', use_index=True)
+data.plot(y='Close_sensex', use_index=True)
+data.plot(y='% change_nifty', use_index=True)
+data.plot(y='% change_sensex', use_index=True)
+
+
+# In[ ]:
+
+
+
+
+
+# In[44]:
+
+
+test[:,:,8]
+
+
+# In[43]:
+
+
+print(test)
+
+
+# In[27]:
+
+
+model = load_model('model6.h5')
+
+
+# In[28]:
+
+
+dot_img_file = 'model_5.png'
+plot_model(model, to_file=dot_img_file, show_shapes=True, show_layer_names=True)
+
+
+# In[76]:
+
+
+# invPred = scaler.inverse_transform(preds[0,:,0].reshape(-1, 1) )
+print(scaler.inverse_transform(np.array(preds[:,:,0]).reshape(-1, 1)))
+
+
+# In[79]:
+
+
+summarize_scores('test', score, scores)
+
+ReLu w/o scaled data gives Nan error while training
+Solutions:
+    https://stackoverflow.com/questions/37232782/nan-loss-when-training-regression-network
+    softmax
+    scaling
+
+# If your time series is trending up or down, estimating these expected values may be difficult and normalization may not be the best method to use on your problem.
+# 
+# 
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
