@@ -7,6 +7,8 @@ This repository contains stock market analysis using emotions.
 ### **Github Resources**
 [Pro Git book](https://git-scm.com/book/en/v2)
 
+[Tutorials](https://www.atlassian.com/git/tutorials/setting-up-a-repository)
+
 [Mastering Markdown](https://guides.github.com/features/mastering-markdown/)
 
 [Git Immersion](https://gitimmersion.com/index.html)
