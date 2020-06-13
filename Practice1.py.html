@@ -1,0 +1,176 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[1]:
+
+
+import numpy as np
+from numpy import array
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import LSTM
+
+
+# In[5]:
+
+
+length = 5 
+arr = array([i/10 for i in range(0, 10,2)])
+
+
+# In[6]:
+
+
+print(arr)
+
+
+# ### One to one model
+
+# In[32]:
+
+
+x = arr.reshape(length, 1, 1) # input is 3D for LSTM always
+y = arr.reshape(length, 1) #the output shape of model 
+
+
+# In[33]:
+
+
+print(x.shape)
+
+
+# In[34]:
+
+
+print(y.shape)
+
+
+# In[35]:
+
+
+units = 5 
+dense_units= 1  #works fine
+#dense_units= 2 # will try to give output as (batch_size,2) but defined is (5,1) in y.shape
+
+model = Sequential()
+model.add(LSTM(units, input_shape=(1,1), return_sequences= False)) #output is (batch_size,units)
+model.add(Dense(dense_units))#gets input (None, units). Then (None, units) * (units, dense_units) => output (None, dense_units)
+model.compile(loss='mean_squared_error', optimizer='adam')
+model.fit(x, y, epochs = 4, batch_size = 5, verbose = 2)
+print(model.summary())
+
+
+# In[19]:
+
+
+X = [0.1, 0.3, 0.5, .7, .9 , 0.9, 0.99]  # only 5 values are used for printing of output ??!!! 
+result = model.predict(x, batch_size=1, verbose=0)
+for value in result:
+	print('%.1f' % value)
+
+
+# ### Many to one model without TimeDistributed wrapper
+# output one vector rather build out an output sequence one step at a time. model has one input with 5 time steps.
+
+# In[40]:
+
+
+x = arr.reshape(1,5,1) # 1 input with 5 timesteps
+y = arr.reshape(1,5) # output shape = (1,5) : because 1 vector with 5 timesteps is the output
+
+
+# In[41]:
+
+
+print(x.shape)
+print(y.shape)
+
+
+# In[42]:
+
+
+units= 5
+dense_units = 5
+model = Sequential()
+model.add(LSTM(units, input_shape= (5, 1), return_sequences = False)) # output is (none, units)
+model.add(Dense(dense_units))  # (none,units)* (units, dense_units) => output is  (none, dense_units)
+model.compile(loss='mean_squared_error', optimizer='adam')
+model.fit(x, y, epochs = 6, batch_size = 1, verbose = 2)
+print(model.summary())
+
+
+# In[43]:
+
+
+units= 5
+dense_units = 5
+model = Sequential()
+model.add(LSTM(units, input_shape= (5, 1), return_sequences = True)) # output is (none, timesteps, units)
+model.add(Dense(dense_units))  # (none, timesteps ,units)* (units, dense_units) => output is  (none, timesteps, dense_units)
+model.compile(loss='mean_squared_error', optimizer='adam') 
+model.fit(x, y, epochs = 6, batch_size = 1, verbose = 2)  #but y is shaped as (1,5) hence error
+print(model.summary())
+
+
+# ### Many to many Sequence prediction with TimeDistributed Sequence
+
+# In[7]:
+
+
+timesteps = 4 
+
+
+# In[9]:
+
+
+arr2 = array([i/10 for i in range(0, 20,1)])
+
+
+# In[10]:
+
+
+print(arr2)
+
+
+# In[36]:
+
+
+x = arr2.reshape(5,timesteps, 1)
+y = arr2.reshape(5,timesteps, 1)
+
+
+# In[27]:
+
+
+timesteps = 4 
+dense_units =1 
+units = 2
+
+
+# In[28]:
+
+
+model = Sequential()
+model.add(LSTM(units, input_shape=(timesteps, 1), return_sequences = True)) # output is (none, timesteps, units)
+model.add(TimeDistributed(Dense(dense_units))) # (none, timesteps, units) * (units, timesteps ,dense_units) = (none, timesteps, dense_units)
+# for each time step dense_units no of timsesteps are output
+# The TimeDistributed achieves this trick by applying the same Dense layer (same weights) to the LSTMs outputs for one time step at a time.
+model.compile(loss='mean_squared_error', optimizer='adam')
+print(model.summary())
+
+
+# In[39]:
+
+
+model.fit(x, y, epochs=5, batch_size=1, verbose=2)
+# evaluate
+result = model.predict(x, batch_size=1, verbose=0)
+for value in result[0,:,0]:
+	print('%.1f' % value)
+
+
+# In[ ]:
+
+
+
+
