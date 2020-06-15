@@ -1,4 +1,8 @@
 This repository contains stock market analysis using emotions.
+
+![Screen Shot 2020-06-15 at 4 52 15 PM](https://user-images.githubusercontent.com/39693183/84652940-18560800-af2a-11ea-8417-398e317cdb3c.png)
+![Screen Shot 2020-06-15 at 4 46 35 PM](https://user-images.githubusercontent.com/39693183/84652946-1b50f880-af2a-11ea-9b63-2daf12fce4e6.png)
+
 ### **Neural Network References**
 [LSTM Theory](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 
