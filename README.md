@@ -30,3 +30,5 @@ git init
 git mv file_from file_to
 ```
 
+#### REFERENCES
+[Jason's Blog](https://machinelearningmastery.com/how-to-develop-lstm-models-for-multi-step-time-series-forecasting-of-household-power-consumption/)
