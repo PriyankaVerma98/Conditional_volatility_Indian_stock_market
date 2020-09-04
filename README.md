@@ -15,4 +15,5 @@ This project investigates the nexus between public emotions and Indian stock mar
 [Jason's Blog](https://machinelearningmastery.com/how-to-develop-lstm-models-for-multi-step-time-series-forecasting-of-household-power-consumption/)
 
 
-Co-Author : [R N Paramnik](https://scholar.google.co.in/citations?user=CcpygK0AAAAJ&hl=en), Prof at IIT Patna
+
+**Co-Author** : [R N Paramnik](https://scholar.google.co.in/citations?user=CcpygK0AAAAJ&hl=en), Prof at IIT Patna
