@@ -1,6 +1,6 @@
-This repository contains stock market analysis using emotions.
+This project investigates the nexus between public emotions and Indian stock market risks. The emotional intelligence of the average investor plays an important role in the overall behaviour of the market. Eight emotions namely Anger, Anticipation, Disgust, Fear, Joy, Sadness, Surprise and Trust have been ex- tracted from news articles from financial news in India. The impact of these emotions is studied on time vary- ing conditional volatility of NIFTY and SENSEX. Our results indicate that crowd emotions of joy, anticipa- tion, and sadness, derived from stock markets related news, are significant predictors of stock market risks for Indian markets.
+Keywords: Neural Network ·Granger Causality · Human Emotions · Indian Stock Market Risk · Conditional Volatility
 
-![Screen Shot 2020-06-15 at 4 52 15 PM](https://user-images.githubusercontent.com/39693183/84652940-18560800-af2a-11ea-8417-398e317cdb3c.png)
 ![Screen Shot 2020-06-15 at 4 46 35 PM](https://user-images.githubusercontent.com/39693183/84652946-1b50f880-af2a-11ea-9b63-2daf12fce4e6.png)
 
 ### **Neural Network References**
