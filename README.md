@@ -16,4 +16,4 @@ This project investigates the nexus between public emotions and Indian stock mar
 
 
 
-**Co-Author** : [R N Paramnik](https://scholar.google.co.in/citations?user=CcpygK0AAAAJ&hl=en), Prof at IIT Patna
+**Co-Author** : [R N Paramanik](https://scholar.google.co.in/citations?user=CcpygK0AAAAJ&hl=en), Prof at IIT Patna
